@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>極洋の守護者 〜情報セキュリティ冒険記〜</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap');
+
+        :root {
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent: #6366f1;
+            --accent-light: #818cf8;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --gold: #f59e0b;
+            --gold-light: #fbbf24;
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --danger: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.1);
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --card-bg: rgba(30, 41, 59, 0.8);
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --radius: 16px;
+            --radius-sm: 8px;
+            --font: 'Noto Sans JP', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font);
+            background: var(--primary);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(245, 158, 11, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+            z-index: 0;
+            animation: bgShift 20s ease-in-out infinite alternate;
+        }
+
+        @keyframes bgShift {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        /* Floating particles */
+        .particles {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px; height: 4px;
+            background: var(--accent-light);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float linear infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 2rem 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent-light), var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .header .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 300;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            display: none;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-bar.active { display: flex; }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .status-item .icon {
+            font-size: 1.2rem;
+        }
+
+        .status-item .label {
+            color: var(--text-muted);
+        }
+
+        .status-item .value {
+            font-weight: 700;
+            color: var(--gold);
+        }
+
+        /* XP Bar */
+        .xp-bar-container {
+            display: none;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .xp-bar-container.active { display: block; }
+
+        .xp-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .xp-bar {
+            height: 8px;
+            background: var(--glass);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .xp-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--gold));
+            border-radius: 4px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 0%;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .card.glow {
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+
+        /* Login Screen */
+        .login-screen {
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+
+        .login-screen .mascot {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid var(--accent);
+            margin: 0 auto 1.5rem;
+            object-fit: cover;
+            box-shadow: 0 0 30px var(--accent-glow);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px var(--accent-glow); }
+            50% { box-shadow: 0 0 40px var(--accent-glow), 0 0 60px rgba(99,102,241,0.1); }
+        }
+
+        .login-screen h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .login-screen p {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .input-group {
+            max-width: 400px;
+            margin: 0 auto 1rem;
+        }
+
+        .input-group label {
+            display: block;
+            text-align: left;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.4rem;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 1rem;
+            font-family: var(--font);
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .input-group input::placeholder {
+            color: #475569;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font);
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #4f46e5);
+            color: white;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px var(--accent-glow);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold), #d97706);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245,158,11,0.3);
+        }
+
+        .btn-gold:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(245,158,11,0.4);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-outline:hover {
+            background: var(--glass);
+            color: var(--text);
+            border-color: var(--accent);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        /* Story Area */
+        .story-area {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .story-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .story-text {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-muted);
+        }
+
+        .story-text strong {
+            color: var(--accent-light);
+        }
+
+        /* Progress */
+        .progress-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--glass);
+            border: 2px solid var(--glass-border);
+            transition: all 0.3s;
+        }
+
+        .progress-dot.completed {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .progress-dot.wrong {
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .progress-dot.current {
+            border-color: var(--accent);
+            box-shadow: 0 0 10px var(--accent-glow);
+            animation: dotPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { box-shadow: 0 0 5px var(--accent-glow); }
+            50% { box-shadow: 0 0 15px var(--accent-glow); }
+        }
+
+        .stage-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent), #4f46e5);
+            color: white;
+            padding: 0.3rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        /* Question */
+        .question-number {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .question-text {
+            font-size: 1.15rem;
+            font-weight: 500;
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Choices */
+        .choices {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .choice-btn {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            width: 100%;
+            padding: 1rem 1.25rem;
+            background: var(--glass);
+            border: 2px solid var(--glass-border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 0.95rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s;
+            line-height: 1.5;
+        }
+
+        .choice-btn:hover:not(:disabled) {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.08);
+        }
+
+        .choice-btn.selected {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.15);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .choice-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .choice-btn.correct-reveal {
+            border-color: var(--success) !important;
+            background: var(--success-bg) !important;
+            opacity: 1 !important;
+        }
+
+        .choice-btn.wrong-reveal {
+            border-color: var(--danger) !important;
+            background: var(--danger-bg) !important;
+            opacity: 1 !important;
+        }
+
+        .choice-letter {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            color: var(--text-muted);
+        }
+
+        .choice-btn.selected .choice-letter {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        /* Feedback */
+        .feedback {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            text-align: center;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .feedback.show { display: block; }
+
+        .feedback.correct {
+            background: var(--success-bg);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .feedback.incorrect {
+            background: var(--danger-bg);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .feedback-img {
+            width: 120px;
+            height: 120px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 1rem;
+            object-fit: cover;
+        }
+
+        .feedback-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .feedback.correct .feedback-title { color: var(--success); }
+        .feedback.incorrect .feedback-title { color: var(--danger); }
+
+        .feedback-msg {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Explanation panel */
+        .explanation-panel {
+            display: none;
+            text-align: left;
+            margin-top: 1rem;
+            padding: 1.25rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: var(--radius-sm);
+            border-left: 4px solid var(--accent);
+        }
+
+        .explanation-panel.show { display: block; }
+
+        .explanation-panel h4 {
+            color: var(--accent-light);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .explanation-panel p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 0.75rem;
+        }
+
+        .explanation-panel .metaphor {
+            background: rgba(245,158,11,0.1);
+            border: 1px solid rgba(245,158,11,0.2);
+            border-radius: var(--radius-sm);
+            padding: 0.75rem 1rem;
+            margin: 0.75rem 0;
+            font-size: 0.85rem;
+            color: var(--gold-light);
+        }
+
+        .explanation-panel .supplement {
+            background: rgba(99,102,241,0.1);
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: var(--radius-sm);
+            padding: 0.75rem 1rem;
+            margin: 0.75rem 0;
+            font-size: 0.85rem;
+            color: var(--accent-light);
+        }
+
+        /* Badge Popup */
+        .badge-popup {
+            display: none;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            background: var(--primary-light);
+            border: 2px solid var(--gold);
+            border-radius: var(--radius);
+            padding: 2rem;
+            text-align: center;
+            z-index: 100;
+            box-shadow: 0 0 60px rgba(245,158,11,0.4);
+            animation: badgeAppear 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .badge-popup.show {
+            display: block;
+        }
+
+        @keyframes badgeAppear {
+            from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .badge-popup .badge-icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .badge-popup .badge-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--gold);
+            margin-bottom: 0.25rem;
+        }
+
+        .badge-popup .badge-desc {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 99;
+        }
+
+        .overlay.show { display: block; }
+
+        /* Game Over */
+        .game-over {
+            display: none;
+            text-align: center;
+        }
+
+        .game-over.show { display: block; }
+
+        .final-score {
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent-light), var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .final-title {
+            font-size: 1.2rem;
+            color: var(--gold);
+            margin-bottom: 2rem;
+        }
+
+        .badges-earned {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .badge-item {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-sm);
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .badge-item .badge-emoji {
+            font-size: 1.5rem;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Wrong answers review */
+        .wrong-review {
+            text-align: left;
+            margin: 2rem 0;
+        }
+
+        .wrong-review h3 {
+            color: var(--danger);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .wrong-item {
+            background: var(--danger-bg);
+            border: 1px solid rgba(239,68,68,0.2);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .wrong-item .wrong-q {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .wrong-item .wrong-a {
+            color: var(--success);
+            font-size: 0.85rem;
+        }
+
+        .wrong-item .wrong-exp {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        /* Scoreboard */
+        .scoreboard {
+            display: none;
+            margin-top: 2rem;
+        }
+
+        .scoreboard.show { display: block; }
+
+        .scoreboard h3 {
+            color: var(--gold);
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .scoreboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .scoreboard-table th {
+            background: var(--glass);
+            color: var(--text-muted);
+            padding: 0.6rem 1rem;
+            font-size: 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .scoreboard-table td {
+            padding: 0.6rem 1rem;
+            font-size: 0.85rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .scoreboard-table tr:hover td {
+            background: var(--glass);
+        }
+
+        .rank-1 { color: var(--gold); font-weight: 700; }
+        .rank-2 { color: #94a3b8; font-weight: 700; }
+        .rank-3 { color: #b45309; font-weight: 700; }
+
+        /* Level up animation */
+        .level-up-flash {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle, rgba(245,158,11,0.3), transparent 70%);
+            z-index: 98;
+            pointer-events: none;
+            opacity: 0;
+            animation: flashIn 1s ease-out forwards;
+        }
+
+        @keyframes flashIn {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* Confetti */
+        .confetti-piece {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            z-index: 200;
+            pointer-events: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .header h1 { font-size: 1.4rem; }
+            .card { padding: 1.25rem; }
+            .story-area { flex-direction: column; text-align: center; }
+            .status-bar { justify-content: center; }
+            .btn-group { flex-direction: column; align-items: center; }
+        }
+
+        .hidden { display: none !important; }
+
+        /* Scoreboard admin section */
+        .admin-section {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+        }
+
+        .admin-section h3 {
+            color: var(--accent-light);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .toggle-scoreboard {
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-align: center;
+            margin-top: 1rem;
+            text-decoration: underline;
+        }
+
+        .toggle-scoreboard:hover { color: var(--accent-light); }
+
+        /* Correct answer highlight in feedback */
+        .correct-answer-display {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: var(--radius-sm);
+            padding: 0.3rem 0.8rem;
+            color: var(--success);
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Particles Background -->
+<div class="particles" id="particles"></div>
+
+<!-- Overlay for popups -->
+<div class="overlay" id="overlay"></div>
+
+<!-- Badge popup -->
+<div class="badge-popup" id="badgePopup">
+    <div class="badge-icon" id="badgeIcon"></div>
+    <div class="badge-title" id="badgeTitle"></div>
+    <div class="badge-desc" id="badgeDesc"></div>
+</div>
+
+<div class="container">
+    <div class="header">
+        <h1>極洋の守護者</h1>
+        <div class="subtitle">〜情報セキュリティ冒険記〜</div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar" id="statusBar">
+        <div class="status-item">
+            <span class="icon">&#x2694;&#xFE0F;</span>
+            <span class="label">勇者:</span>
+            <span class="value" id="displayName">-</span>
+        </div>
+        <div class="status-item">
+            <span class="icon">&#x2B50;</span>
+            <span class="label">Lv.</span>
+            <span class="value" id="displayLevel">1</span>
+        </div>
+        <div class="status-item">
+            <span class="icon">&#x1F3C5;</span>
+            <span class="label">称号:</span>
+            <span class="value" id="displayTitle">見習い守護者</span>
+        </div>
+        <div class="status-item">
+            <span class="icon">&#x1F4A0;</span>
+            <span class="label">XP:</span>
+            <span class="value" id="displayXP">0</span>
+        </div>
+    </div>
+
+    <!-- XP Bar -->
+    <div class="xp-bar-container" id="xpBarContainer">
+        <div class="xp-bar-label">
+            <span id="xpLabel">次のレベルまで</span>
+            <span id="xpProgress">0 / 200 XP</span>
+        </div>
+        <div class="xp-bar">
+            <div class="xp-bar-fill" id="xpBarFill"></div>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div class="card glow login-screen" id="loginScreen">
+        <img src="https://www.marche.kyokuyo.co.jp/kyokuyo_shanai/dandori-nya/10.png"
+             alt="だんどり～にゃ" class="mascot">
+        <h2>冒険への招待状</h2>
+        <p>
+            極洋の新たなる守護者よ、ようこそ！<br>
+            情報セキュリティの知識を試す8つの試練が待っているにゃ。<br>
+            メールアドレスを入力して冒険を始めるにゃ！
+        </p>
+        <div class="input-group">
+            <label for="emailInput">メールアドレス（社内メール）</label>
+            <input type="email" id="emailInput" placeholder="taro.yamada@kyokuyo.co.jp">
+        </div>
+        <div class="input-group">
+            <label for="nameInput">表示名（ニックネーム可）</label>
+            <input type="text" id="nameInput" placeholder="山田太郎">
+        </div>
+        <div style="margin-top:1rem">
+            <button class="btn btn-primary" id="startBtn" onclick="startGame()">冒険を始める</button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="hidden">
+        <!-- Story -->
+        <div class="card" id="storyCard">
+            <div class="story-area">
+                <img id="storyImg" src="https://www.marche.kyokuyo.co.jp/kyokuyo_shanai/dandori-nya/10.png"
+                     alt="だんどり～にゃ" class="story-avatar">
+                <div class="story-text" id="storyText">
+                    <strong>賢者だんどり～にゃ：</strong>冒険の始まりにゃ！
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Dots -->
+        <div class="progress-indicator" id="progressDots"></div>
+
+        <!-- Question Card -->
+        <div class="card" id="questionCard">
+            <span class="stage-badge" id="stageBadge">第1章</span>
+            <div class="question-number" id="questionNumber">問題 1 / 8</div>
+            <div class="question-text" id="questionText"></div>
+            <div class="choices" id="choicesArea"></div>
+            <div style="text-align:center">
+                <button class="btn btn-gold" id="submitBtn" disabled onclick="submitAnswer()">解答する</button>
+            </div>
+
+            <!-- Feedback -->
+            <div class="feedback" id="feedbackArea">
+                <img class="feedback-img" id="feedbackImg" src="" alt="">
+                <div class="feedback-title" id="feedbackTitle"></div>
+                <div class="feedback-msg" id="feedbackMsg"></div>
+
+                <div class="explanation-panel" id="explanationPanel">
+                    <h4>正解</h4>
+                    <p class="correct-answer-display" id="correctAnswerDisplay"></p>
+                    <h4>解説</h4>
+                    <p id="explanationText"></p>
+                    <div class="metaphor" id="metaphorArea"></div>
+                    <h4>補足学習ポイント</h4>
+                    <div class="supplement" id="supplementArea"></div>
+                </div>
+            </div>
+
+            <div style="text-align:center; margin-top:1rem">
+                <button class="btn btn-primary hidden" id="nextBtn" onclick="nextQuestion()">次の試練へ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="hidden">
+        <div class="card game-over show">
+            <div class="final-score" id="finalScore">800 XP</div>
+            <div class="final-title" id="finalTitle">ICTマスター守護者</div>
+            <p style="color:var(--text-muted); margin-bottom:1rem" id="finalMsg"></p>
+
+            <div class="badges-earned" id="badgesEarned"></div>
+
+            <div class="wrong-review" id="wrongReview">
+                <h3>だんどり～にゃの復習指導にゃ</h3>
+                <div id="wrongList"></div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-gold" onclick="replayGame(true)">シャッフルして再挑戦</button>
+                <button class="btn btn-outline" onclick="replayGame(false)">同じ順番で再挑戦</button>
+            </div>
+
+            <!-- Scoreboard -->
+            <div class="admin-section" id="scoreboardSection">
+                <h3>成績表</h3>
+                <table class="scoreboard-table" id="scoreboardTable">
+                    <thead>
+                        <tr>
+                            <th>順位</th>
+                            <th>名前</th>
+                            <th>スコア</th>
+                            <th>正答率</th>
+                            <th>称号</th>
+                            <th>日時</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scoreboardBody"></tbody>
+                </table>
+                <p class="toggle-scoreboard" onclick="clearScoreboard()">成績データをリセット</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== CONFIG =====
+const SAGE_IMG = "https://www.marche.kyokuyo.co.jp/kyokuyo_shanai/dandori-nya/10.png";
+const CORRECT_IMGS = [
+    "https://www.marche.kyokuyo.co.jp/kyokuyo_shanai/dandori-nya/12.png",
+    "https://www.marche.kyokuyo.co.jp/kyokuyo_shanai/dandori-nya/19.png",
+    "https://www.marche.kyokuyo.co.jp/kyokuyo_shanai/dandori-nya/22.png"
+];
+const INCORRECT_IMGS = [
+    "https://www.marche.kyokuyo.co.jp/kyokuyo_shanai/dandori-nya/13.png",
+    "https://www.marche.kyokuyo.co.jp/kyokuyo_shanai/dandori-nya/11.png",
+    "https://www.marche.kyokuyo.co.jp/kyokuyo_shanai/dandori-nya/17.png"
+];
+
+const TITLES = [
+    { level: 1, name: "見習い守護者", xp: 0 },
+    { level: 2, name: "情報の探索者", xp: 200 },
+    { level: 3, name: "セキュリティの剣士", xp: 400 },
+    { level: 4, name: "デジタルの守護者", xp: 600 },
+    { level: 5, name: "極洋のICTマスター", xp: 800 }
+];
+
+const STAGES = [
+    { chapter: "第1章：社用PCの掟", setting: "情報の城", desc: "会社のパソコンは個人のものとは違う。まずは基本のルールから学ぶにゃ！" },
+    { chapter: "第2章：メールの迷宮", setting: "迷宮の通路", desc: "メールに潜む罠を見抜けるかにゃ？フィッシングの魔物に気をつけるにゃ！" },
+    { chapter: "第3章：SNSの落とし穴", setting: "幻影の森", desc: "SNSの世界は見えない危険がいっぱいにゃ。一つの投稿が命取りになるにゃ！" },
+    { chapter: "第4章：暗黒のランサムウェア", setting: "暗黒の砦", desc: "データを人質にとる恐ろしい敵、ランサムウェア。その実態を知るにゃ！" },
+    { chapter: "第5章：不正ログインの影", setting: "影の回廊", desc: "パスワードの管理を怠れば、敵は簡単に侵入してくるにゃ！" },
+    { chapter: "第6章：サプライチェーンの嵐", setting: "嵐の海原", desc: "攻撃は自社だけでなく取引先からもやってくる。連鎖する脅威に備えるにゃ！" },
+    { chapter: "第7章：AIの光と影", setting: "知恵の塔", desc: "AIは強力な味方にも、危険な罠にもなりうるにゃ。正しく使いこなすにゃ！" },
+    { chapter: "第8章：守護者の試練", setting: "最終決戦の間", desc: "すべての知識を総動員して、最後の試練に挑むにゃ！" }
+];
+
+// ===== QUESTIONS (8 questions, gradually increasing difficulty) =====
+const ALL_QUESTIONS = [
+    {
+        stage: 0,
+        question: "会社から貸与されたパソコンについて、正しい説明はどれでしょう？",
+        choices: [
+            { text: "自分専用なので、業務外でも自由に使ってよい", value: "A" },
+            { text: "SKYSEAなどの管理ソフトで操作ログが記録されており、業務目的以外の使用は禁止されている", value: "B" },
+            { text: "許可なくソフトをインストールしても、問題が起きなければ大丈夫", value: "C" },
+            { text: "社外へ自由に持ち出して使ってよい", value: "D" }
+        ],
+        correctAnswer: "B",
+        explanation: "会社のパソコンは「貸与物」であり個人所有ではないにゃ。SKYSEAという管理ソフトが全PCにインストールされており、閲覧WebサイトのURLやインストール済みソフトも管理されているにゃ。業務目的以外の使用は禁止、社外持ち出しには上長許可が必要にゃ。",
+        metaphor: "会社のPCは「社用車」と同じにゃ。会社から借りている車でプライベートのドライブはできないし、ドライブレコーダー（SKYSEA）で走行記録も残っているにゃ。",
+        supplement: "SKYSEAは常時監視ではないものの、問題発生時に確認されるにゃ。「バレなければいい」ではなく、ルールを守ることが大切にゃ。"
+    },
+    {
+        stage: 1,
+        question: "取引先にメールを送る際、最も危険な行為はどれでしょう？<br>（極洋のフィッシングメール訓練では、2025年度に52名がパスワードを入力してしまいました）",
+        choices: [
+            { text: "送信前に宛先・内容・添付ファイルを確認する", value: "A" },
+            { text: "機密情報送付時にパスワードを設定する", value: "B" },
+            { text: "「アカウントが停止されます」という緊急メール内のURLをクリックしてログイン情報を入力する", value: "C" },
+            { text: "社名が似た取引先へのメール送信時に、特に宛先を慎重に確認する", value: "D" }
+        ],
+        correctAnswer: "C",
+        explanation: "「今すぐログイン」「アカウント停止」など緊急を煽る表現はフィッシングメールの典型的な手口にゃ。極洋の訓練でも52名がパスワードを入力してしまい、もし実際の攻撃なら社内システムへの不正アクセスやなりすましメールの大量送信につながる危険があったにゃ。",
+        metaphor: "フィッシングメールは、魚（あなた）を釣るための「エサ」にゃ。美味しそうなエサ（緊急性）に飛びつくと、針（個人情報の窃取）にかかってしまうにゃ。",
+        supplement: "差出人アドレスをよく確認（例：Amazon → Arnazon のような偽装）し、不審なURLや添付ファイルは絶対に開かないこと。少しでも怪しいと思ったら情報システム部に相談するにゃ。"
+    },
+    {
+        stage: 2,
+        question: "ある社員が個人SNSで取引先のイベントについてネガティブな投稿をしました。「鍵アカ（非公開アカウント）だから大丈夫」と考えていましたが、なぜこれが危険なのでしょうか？",
+        choices: [
+            { text: "鍵アカなら絶対に外部に漏れることはないので、実は問題ない", value: "A" },
+            { text: "スクリーンショットを撮られれば一瞬で拡散される可能性があり、「個人アカウント＝安全地帯」は幻想だから", value: "B" },
+            { text: "投稿から1ヶ月経てば自動的に削除されるので問題ない", value: "C" },
+            { text: "個人アカウントでの発言は法的に保護されるので問題ない", value: "D" }
+        ],
+        correctAnswer: "B",
+        explanation: "鍵アカ（非公開）であっても、フォロワーがスクリーンショットを撮れば一瞬で拡散できるにゃ。また、写真の背景や位置情報から会社や取引先が特定されることもあるにゃ。退職後に問題が発覚するケースも多数報告されているにゃ。",
+        metaphor: "鍵アカは「鍵のかかった部屋で話す」ようなものだけど、部屋の中にいる人がドアを開けて外に叫ぶことは止められないにゃ。壁に耳あり障子に目あり、にゃ。",
+        supplement: "SNS・掲示板等に会社（取引先含む）や個人の情報を書き込むことは禁止されているにゃ。「個人の意見です」という免責は通用しないと心得るにゃ。"
+    },
+    {
+        stage: 3,
+        question: "ランサムウェアの「二重恐喝」とは何を指すでしょうか？<br>（IPAの「情報セキュリティ10大脅威 2026」組織編で10年連続1位の脅威です）",
+        choices: [
+            { text: "2回に分けて身代金を要求すること", value: "A" },
+            { text: "データを暗号化して使用不能にした上で、「身代金を払わなければ盗んだ情報を公開する」と脅迫すること", value: "B" },
+            { text: "2つの会社を同時に攻撃すること", value: "C" },
+            { text: "メールとSMSの両方からフィッシングを行うこと", value: "D" }
+        ],
+        correctAnswer: "B",
+        explanation: "ランサムウェアの二重恐喝とは、Step1でデータを盗み、Step2でファイルを暗号化して使用不能にし、Step3で「身代金を払わなければ盗んだ情報を公開する」と脅迫する手口にゃ。国内企業の平均被害額は約2.2億円、復旧費用が1,000万円以上かかった企業は46%にも上るにゃ。",
+        metaphor: "泥棒が家の中の物を全部金庫に閉じ込めて「鍵が欲しければ金を払え」と言い、さらに「払わなければ盗んだ秘密の写真をばらまく」と脅すようなものにゃ。二段構えの恐喝にゃ。",
+        supplement: "身代金を支払ってもデータが確実に復元される保証はなく、被害企業の85.4%は完全復旧に失敗しているにゃ（Gartner報告）。主な感染経路はフィッシングメール（約45%）とVPN機器からの侵入（約55%）にゃ。"
+    },
+    {
+        stage: 4,
+        question: "パスワード管理について、極洋で実際に見受けられる問題行為も含め、最も危険な組み合わせはどれでしょう？",
+        choices: [
+            { text: "パスワードを定期的に変更し、他人に教えない", value: "A" },
+            { text: "付箋にパスワードを書いてPCに貼り、初期パスワード「Kyokuyo+生年月日」のまま使用する", value: "B" },
+            { text: "印刷物の取り忘れに注意し、机の上を整理整頓する", value: "C" },
+            { text: "初期パスワードを変更し、安全な場所に記録する", value: "D" }
+        ],
+        correctAnswer: "B",
+        explanation: "付箋にパスワードを書いてPCに貼る行為は極洋でも実際に見受けられる問題にゃ！さらに初期パスワード（Kyokuyo+生年月日など）のまま使い続けるのは、誰でも推測できてしまうため非常に危険にゃ。双日の事例では、元派遣社員が前職同僚のID・パスワードを聞き出し、約3.7万ファイルを不正取得した事件があったにゃ。",
+        metaphor: "パスワードは「家の鍵」にゃ。鍵を玄関の前に置いておいたり（付箋貼り）、「住所＋名前」で作れる合鍵（初期PW）を使い続けるのは、「どうぞ入ってください」と言っているのと同じにゃ。",
+        supplement: "IDとパスワードを親しい同僚にも絶対に教えてはいけないにゃ。自分のIDを貸しただけでも共犯になりうるにゃ。不審な依頼は必ず断り、上司に報告すること。"
+    },
+    {
+        stage: 5,
+        question: "2025年にアスクルがランサムウェアに感染した結果、無印良品（良品計画）の顧客情報が外部流出する可能性が生じました。この連鎖的な被害を何と呼ぶでしょうか？また、極洋にとってこの事例が重要な理由は何でしょう？",
+        choices: [
+            { text: "ゼロデイ攻撃。極洋はアスクルと取引があるから重要。", value: "A" },
+            { text: "サプライチェーン攻撃。極洋も水産・食品メーカーとして物流・港湾・受発注システムへの攻撃が事業停止に直結するため。", value: "B" },
+            { text: "DDoS攻撃。極洋のWebサイトも狙われる可能性があるから。", value: "C" },
+            { text: "ソーシャルエンジニアリング。従業員の心理を利用した攻撃だから。", value: "D" }
+        ],
+        correctAnswer: "B",
+        explanation: "アスクル → 物流子会社ASKUL LOGIST → 無印良品と被害が連鎖したのは「サプライチェーン攻撃」の典型例にゃ。個人情報流出は約74万件、国際的ハッカーグループが犯行声明を出したにゃ。極洋も水産・食品を扱うメーカーであり、食品・飲料業界は標的にされやすい業種にゃ。",
+        metaphor: "ドミノ倒しのように、1つの会社が倒れると取引先も次々と被害を受けるにゃ。チェーン（鎖）の中で最も弱い環が、全体の強さを決めてしまうにゃ。",
+        supplement: "アサヒグループ（2025年9月）では約191.4万件の個人情報が漏洩、韓国クーパンでは約3,370万人（韓国人口の66%）の情報が流出したにゃ。食品メーカー各社がVPN運用方針の見直しを図っている状況にゃ。"
+    },
+    {
+        stage: 6,
+        question: "極洋が公式AI環境として「ChatAI（ユーザーローカル社）」を導入している理由として最も適切なものはどれでしょうか？また、個人のChatGPTで「取引先との契約内容を要約して」と入力した場合、何が起きる可能性がありますか？",
+        choices: [
+            { text: "ChatAIの方が無料のChatGPTより回答精度が高いから。個人のChatGPTでは回答が遅くなるだけ。", value: "A" },
+            { text: "ChatAIはオプトアウト環境（入力データがAI学習に使われない）だから。個人のChatGPTでは入力データが学習に使われ、他のユーザーへの回答に機密情報が利用されるリスクがある。", value: "B" },
+            { text: "ChatAIは日本語に特化しているから。個人のChatGPTは英語しか使えない。", value: "C" },
+            { text: "ChatAIは社内ネットワークでしか使えないから。個人のChatGPTはウイルスに感染する危険がある。", value: "D" }
+        ],
+        correctAnswer: "B",
+        explanation: "「オプトアウト」とは入力したデータをAI学習に使わないよう設定することにゃ。無料プランのAI（ChatGPT等）では入力データが学習に使われる可能性があり、取引先の社名・担当者名・価格情報、人事情報、未発表プロジェクト情報、顧客の個人情報が他のユーザーの回答に使われるリスクがあるにゃ。",
+        metaphor: "無料AIに業務情報を入力するのは、街中の掲示板に社外秘の書類を貼り出すようなものにゃ。ChatAIは「鍵付きの会議室」で、外に情報が漏れない仕組みになっているにゃ。",
+        supplement: "2025〜2026年は「試す時代」から「使いこなす時代」にゃ。AIは積極的に活用すべきだが、必ずChatAIを使用すること。使い始め方はGaroonの掲示板に手順が掲載されているにゃ。"
+    },
+    {
+        stage: 7,
+        question: "2024年に香港企業でディープフェイク詐欺により約34億円が騙し取られた事件を踏まえ、以下のシナリオで最も適切な対応はどれでしょう？<br><br>【シナリオ】あなたの上司からビデオ会議で「至急、取引先に300万円を振り込んでほしい。事情は後で説明する」と指示がありました。映像も音声も上司そのものに見えます。",
+        choices: [
+            { text: "上司の指示なので、すぐに振り込み手続きを行う", value: "A" },
+            { text: "メールで上司に確認してから振り込む", value: "B" },
+            { text: "電話等で直接本人に確認し、社内の承認プロセスに従って対応する", value: "C" },
+            { text: "金額が少ないので、自己判断で振り込んでも問題ない", value: "D" }
+        ],
+        correctAnswer: "C",
+        explanation: "AIが攻撃にも使われている時代にゃ。ディープフェイクで社長や上司の声・顔を偽造し、「今すぐ振込して」と指示する手口が実際に発生しているにゃ。ビデオ会議の映像・音声は偽造可能であり、メールも乗っ取られている可能性があるため、必ず電話等の別手段で直接本人に確認し、社内の正式な承認プロセスに従うべきにゃ。",
+        metaphor: "AIの時代では「見た目」も「声」も信じられないにゃ。まるで変装の達人と対峙しているようなもの。本人確認は「合言葉」（別の通信手段での確認）で行う必要があるにゃ。",
+        supplement: "サイバー犯罪者はAIで高品質フィッシングメールの大量生成、ディープフェイクの作成、脆弱性の自動スキャンを行っているにゃ。「不審に感じたら、必ず電話等で直接本人に確認する習慣」が最も重要な防御にゃ。今日から実践する5つのこと：(1)疑わしいメールは開かない (2)パスワードは強固に管理 (3)業務AIはChatAIを使う (4)SNSに会社情報を投稿しない (5)毎日シャットダウンする"
+    }
+];
+
+// ===== STATE =====
+let playerEmail = "";
+let playerName = "";
+let currentIndex = 0;
+let totalXP = 0;
+let playerLevel = 1;
+let playerTitleName = "見習い守護者";
+let wrongAnswers = [];
+let questions = [];
+let selectedValue = null;
+let earnedBadges = [];
+let progressStates = []; // 'pending', 'correct', 'wrong', 'current'
+
+// ===== PARTICLES =====
+function createParticles() {
+    const container = document.getElementById('particles');
+    for (let i = 0; i < 30; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.animationDuration = (8 + Math.random() * 12) + 's';
+        p.style.animationDelay = Math.random() * 10 + 's';
+        p.style.width = p.style.height = (2 + Math.random() * 4) + 'px';
+        const colors = ['var(--accent-light)', 'var(--gold)', 'var(--success)'];
+        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+        container.appendChild(p);
+    }
+}
+
+// ===== SCOREBOARD (localStorage) =====
+function getScoreboard() {
+    try {
+        return JSON.parse(localStorage.getItem('kyokuyo_quiz_scores') || '[]');
+    } catch { return []; }
+}
+
+function saveScore(email, name, score, correctCount, total, title) {
+    const scores = getScoreboard();
+    const existing = scores.findIndex(s => s.email === email);
+    const entry = {
+        email, name, score, correctCount, total, title,
+        date: new Date().toLocaleString('ja-JP')
+    };
+    if (existing >= 0) {
+        // Update if better score or same
+        if (score >= scores[existing].score) {
+            scores[existing] = entry;
+        }
+    } else {
+        scores.push(entry);
+    }
+    scores.sort((a, b) => b.score - a.score);
+    localStorage.setItem('kyokuyo_quiz_scores', JSON.stringify(scores));
+}
+
+function renderScoreboard() {
+    const scores = getScoreboard();
+    const tbody = document.getElementById('scoreboardBody');
+    tbody.innerHTML = '';
+    scores.forEach((s, i) => {
+        const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
+        const rankLabel = i === 0 ? '\u{1F947}' : i === 1 ? '\u{1F948}' : i === 2 ? '\u{1F949}' : (i + 1);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="${rankClass}">${rankLabel}</td>
+            <td>${escapeHtml(s.name)}</td>
+            <td>${s.score} XP</td>
+            <td>${s.correctCount}/${s.total} (${Math.round(s.correctCount/s.total*100)}%)</td>
+            <td>${escapeHtml(s.title)}</td>
+            <td style="font-size:0.75rem;color:var(--text-muted)">${s.date}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function clearScoreboard() {
+    if (confirm('成績データをすべて削除しますか？')) {
+        localStorage.removeItem('kyokuyo_quiz_scores');
+        renderScoreboard();
+    }
+}
+
+function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+// ===== GAME LOGIC =====
+function startGame() {
+    const email = document.getElementById('emailInput').value.trim();
+    const name = document.getElementById('nameInput').value.trim();
+    if (!email) {
+        alert('メールアドレスを入力してください。');
+        return;
+    }
+    if (!name) {
+        alert('表示名を入力してください。');
+        return;
+    }
+    playerEmail = email;
+    playerName = name;
+    currentIndex = 0;
+    totalXP = 0;
+    playerLevel = 1;
+    playerTitleName = "見習い守護者";
+    wrongAnswers = [];
+    selectedValue = null;
+    earnedBadges = [];
+    questions = [...ALL_QUESTIONS];
+    progressStates = questions.map(() => 'pending');
+
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('gameScreen').classList.remove('hidden');
+    document.getElementById('gameOverScreen').classList.add('hidden');
+    document.getElementById('statusBar').classList.add('active');
+    document.getElementById('xpBarContainer').classList.add('active');
+
+    updateStatus();
+    loadQuestion();
+}
+
+function replayGame(shuffle) {
+    currentIndex = 0;
+    totalXP = 0;
+    playerLevel = 1;
+    playerTitleName = "見習い守護者";
+    wrongAnswers = [];
+    selectedValue = null;
+    earnedBadges = [];
+
+    if (shuffle) {
+        questions = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5);
+    } else {
+        questions = [...ALL_QUESTIONS];
+    }
+    progressStates = questions.map(() => 'pending');
+
+    document.getElementById('gameOverScreen').classList.add('hidden');
+    document.getElementById('gameScreen').classList.remove('hidden');
+    document.getElementById('statusBar').classList.add('active');
+    document.getElementById('xpBarContainer').classList.add('active');
+
+    updateStatus();
+    loadQuestion();
+}
+
+function updateStatus() {
+    document.getElementById('displayName').textContent = playerName;
+    document.getElementById('displayLevel').textContent = playerLevel;
+    document.getElementById('displayTitle').textContent = playerTitleName;
+    document.getElementById('displayXP').textContent = totalXP;
+
+    // XP bar
+    const currentLevelXP = TITLES[playerLevel - 1]?.xp || 0;
+    const nextLevelXP = TITLES[playerLevel]?.xp || 800;
+    const progress = Math.min(((totalXP - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100, 100);
+    document.getElementById('xpBarFill').style.width = progress + '%';
+    document.getElementById('xpProgress').textContent = `${totalXP} / ${nextLevelXP} XP`;
+}
+
+function renderProgressDots() {
+    const container = document.getElementById('progressDots');
+    container.innerHTML = '';
+    progressStates.forEach((state, i) => {
+        const dot = document.createElement('div');
+        dot.className = 'progress-dot';
+        if (i === currentIndex) dot.classList.add('current');
+        if (state === 'correct') dot.classList.add('completed');
+        if (state === 'wrong') dot.classList.add('wrong');
+        container.appendChild(dot);
+    });
+}
+
+function loadQuestion() {
+    if (currentIndex >= questions.length) {
+        endGame();
+        return;
+    }
+
+    const q = questions[currentIndex];
+    const stage = STAGES[q.stage];
+
+    // Story
+    document.getElementById('storyImg').src = SAGE_IMG;
+    document.getElementById('storyText').innerHTML =
+        `<strong>賢者だんどり～にゃ：</strong>${stage.desc}`;
+
+    // Stage badge
+    document.getElementById('stageBadge').textContent = stage.chapter;
+    document.getElementById('questionNumber').textContent = `問題 ${currentIndex + 1} / ${questions.length}`;
+    document.getElementById('questionText').innerHTML = q.question;
+
+    // Choices
+    const choicesArea = document.getElementById('choicesArea');
+    choicesArea.innerHTML = '';
+    const letters = ['A', 'B', 'C', 'D'];
+    q.choices.forEach((c, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.innerHTML = `<span class="choice-letter">${letters[i]}</span><span>${c.text}</span>`;
+        btn.dataset.value = c.value;
+        btn.addEventListener('click', () => selectChoice(btn, c.value));
+        choicesArea.appendChild(btn);
+    });
+
+    // Reset
+    selectedValue = null;
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('feedbackArea').className = 'feedback';
+    document.getElementById('feedbackArea').classList.remove('show');
+    document.getElementById('explanationPanel').classList.remove('show');
+    document.getElementById('nextBtn').classList.add('hidden');
+    document.getElementById('submitBtn').style.display = '';
+
+    renderProgressDots();
+}
+
+function selectChoice(btn, value) {
+    document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedValue = value;
+    document.getElementById('submitBtn').disabled = false;
+}
+
+function submitAnswer() {
+    if (!selectedValue) return;
+    const q = questions[currentIndex];
+    const isCorrect = selectedValue === q.correctAnswer;
+
+    // Disable choices
+    document.querySelectorAll('.choice-btn').forEach(btn => {
+        btn.disabled = true;
+        if (btn.dataset.value === q.correctAnswer) {
+            btn.classList.add('correct-reveal');
+        }
+        if (btn.classList.contains('selected') && !isCorrect) {
+            btn.classList.add('wrong-reveal');
+        }
+    });
+
+    document.getElementById('submitBtn').style.display = 'none';
+
+    const feedbackArea = document.getElementById('feedbackArea');
+
+    if (isCorrect) {
+        totalXP += 100;
+        progressStates[currentIndex] = 'correct';
+
+        feedbackArea.className = 'feedback correct show';
+        document.getElementById('feedbackImg').src = CORRECT_IMGS[Math.floor(Math.random() * CORRECT_IMGS.length)];
+        document.getElementById('feedbackTitle').textContent = '正解にゃ！';
+        document.getElementById('feedbackMsg').textContent = `さすが${playerName}！+100 XP獲得にゃ！`;
+        document.getElementById('explanationPanel').classList.remove('show');
+
+        // Story update
+        document.getElementById('storyText').innerHTML =
+            `<strong>賢者だんどり～にゃ：</strong>素晴らしいにゃ、${playerName}！知識の光がまた一つ灯ったにゃ！`;
+
+        // Level up check
+        checkLevelUp();
+    } else {
+        wrongAnswers.push(currentIndex);
+        progressStates[currentIndex] = 'wrong';
+
+        feedbackArea.className = 'feedback incorrect show';
+        document.getElementById('feedbackImg').src = INCORRECT_IMGS[Math.floor(Math.random() * INCORRECT_IMGS.length)];
+        document.getElementById('feedbackTitle').textContent = '残念...不正解にゃ';
+        document.getElementById('feedbackMsg').textContent = 'だが、失敗から学ぶことこそ真の知恵にゃ！';
+
+        // Show explanation
+        const panel = document.getElementById('explanationPanel');
+        panel.classList.add('show');
+        const correctChoice = q.choices.find(c => c.value === q.correctAnswer);
+        document.getElementById('correctAnswerDisplay').textContent = correctChoice.text;
+        document.getElementById('explanationText').innerHTML = q.explanation;
+        document.getElementById('metaphorArea').innerHTML = '<strong>&#x1F4A1; たとえ話：</strong>' + q.metaphor;
+        document.getElementById('supplementArea').innerHTML = q.supplement;
+
+        // Story update
+        document.getElementById('storyText').innerHTML =
+            `<strong>賢者だんどり～にゃ：</strong>惜しいにゃ、${playerName}。でもここで学んだことは忘れないにゃ！`;
+    }
+
+    updateStatus();
+    renderProgressDots();
+    document.getElementById('nextBtn').classList.remove('hidden');
+}
+
+function checkLevelUp() {
+    let newLevel = 1;
+    let newTitle = "見習い守護者";
+    for (let i = TITLES.length - 1; i >= 0; i--) {
+        if (totalXP >= TITLES[i].xp) {
+            newLevel = TITLES[i].level;
+            newTitle = TITLES[i].name;
+            break;
+        }
+    }
+
+    if (newLevel > playerLevel) {
+        playerLevel = newLevel;
+        playerTitleName = newTitle;
+        updateStatus();
+
+        // Flash effect
+        const flash = document.createElement('div');
+        flash.className = 'level-up-flash';
+        document.body.appendChild(flash);
+        setTimeout(() => flash.remove(), 1000);
+
+        // Badge popup
+        showBadge('\u{2B50}', `Lv.${playerLevel} ${playerTitleName}`, 'レベルアップ！新たな称号を獲得！');
+        earnedBadges.push({ icon: '\u{2B50}', name: playerTitleName });
+    }
+
+    // Special badges
+    if (currentIndex === 3 && wrongAnswers.length === 0 && !earnedBadges.find(b => b.name === '前半パーフェクト')) {
+        showBadge('\u{1F525}', '前半パーフェクト', '前半4問を全問正解！');
+        earnedBadges.push({ icon: '\u{1F525}', name: '前半パーフェクト' });
+    }
+}
+
+function showBadge(icon, title, desc) {
+    const popup = document.getElementById('badgePopup');
+    const overlay = document.getElementById('overlay');
+    document.getElementById('badgeIcon').textContent = icon;
+    document.getElementById('badgeTitle').textContent = title;
+    document.getElementById('badgeDesc').textContent = desc;
+    popup.classList.add('show');
+    overlay.classList.add('show');
+    setTimeout(() => {
+        popup.classList.remove('show');
+        overlay.classList.remove('show');
+    }, 2000);
+}
+
+function nextQuestion() {
+    currentIndex++;
+    loadQuestion();
+}
+
+function endGame() {
+    document.getElementById('gameScreen').classList.add('hidden');
+    document.getElementById('statusBar').classList.remove('active');
+    document.getElementById('xpBarContainer').classList.remove('active');
+    document.getElementById('gameOverScreen').classList.remove('hidden');
+
+    const correctCount = questions.length - wrongAnswers.length;
+
+    document.getElementById('finalScore').textContent = `${totalXP} XP`;
+    document.getElementById('finalTitle').textContent = playerTitleName;
+
+    let msg = '';
+    if (correctCount === questions.length) {
+        msg = `全問正解！${playerName}は真の極洋の守護者にゃ！`;
+        earnedBadges.push({ icon: '\u{1F451}', name: '完全制覇' });
+        createConfetti();
+    } else if (correctCount >= 6) {
+        msg = `${correctCount}/${questions.length}問正解！立派な守護者にゃ！`;
+    } else {
+        msg = `${correctCount}/${questions.length}問正解。もう一度挑戦して知識を深めるにゃ！`;
+    }
+    document.getElementById('finalMsg').textContent = msg;
+
+    // Badges
+    const badgesDiv = document.getElementById('badgesEarned');
+    badgesDiv.innerHTML = '';
+    earnedBadges.forEach(b => {
+        const item = document.createElement('div');
+        item.className = 'badge-item';
+        item.innerHTML = `<span class="badge-emoji">${b.icon}</span>${b.name}`;
+        badgesDiv.appendChild(item);
+    });
+
+    // Wrong answers review
+    const wrongList = document.getElementById('wrongList');
+    wrongList.innerHTML = '';
+    if (wrongAnswers.length > 0) {
+        document.getElementById('wrongReview').style.display = 'block';
+        wrongAnswers.forEach(idx => {
+            const q = questions[idx];
+            const correctChoice = q.choices.find(c => c.value === q.correctAnswer);
+            const item = document.createElement('div');
+            item.className = 'wrong-item';
+            item.innerHTML = `
+                <div class="wrong-q">${STAGES[q.stage].chapter}：${q.question.replace(/<[^>]*>/g, '').substring(0, 80)}...</div>
+                <div class="wrong-a">正解：${correctChoice.text}</div>
+                <div class="wrong-exp">${q.explanation.substring(0, 100)}...</div>
+            `;
+            wrongList.appendChild(item);
+        });
+    } else {
+        document.getElementById('wrongReview').style.display = 'none';
+    }
+
+    // Save score
+    saveScore(playerEmail, playerName, totalXP, correctCount, questions.length, playerTitleName);
+    renderScoreboard();
+}
+
+function createConfetti() {
+    const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#ec4899', '#8b5cf6'];
+    for (let i = 0; i < 60; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + 'vw';
+        piece.style.top = '-10px';
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        piece.style.width = (5 + Math.random() * 8) + 'px';
+        piece.style.height = (5 + Math.random() * 8) + 'px';
+        document.body.appendChild(piece);
+
+        const duration = 2 + Math.random() * 3;
+        const xDrift = (Math.random() - 0.5) * 200;
+        piece.animate([
+            { transform: `translate(0, 0) rotate(0deg)`, opacity: 1 },
+            { transform: `translate(${xDrift}px, 100vh) rotate(${360 + Math.random()*360}deg)`, opacity: 0 }
+        ], {
+            duration: duration * 1000,
+            easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            delay: Math.random() * 500
+        }).onfinish = () => piece.remove();
+    }
+}
+
+// ===== INIT =====
+createParticles();
+</script>
+</body>
+</html>
