@@ -1006,7 +1006,7 @@
 
             <!-- Scoreboard -->
             <div class="admin-section" id="scoreboardSection">
-                <h3>成績表</h3>
+                <h3>本日のランキング <span id="scoreboardStatus" style="font-size:0.7rem;font-weight:normal;color:var(--text-muted);margin-left:0.5rem;"></span></h3>
                 <table class="scoreboard-table" id="scoreboardTable">
                     <thead>
                         <tr>
@@ -1204,37 +1204,83 @@ function createParticles() {
     }
 }
 
-// ===== SCOREBOARD (localStorage) =====
-function getScoreboard() {
+// ===== SHARED SCOREBOARD CONFIG =====
+// JSONBin.io を使ってスコアを共有します。
+// セットアップ手順:
+//   1. https://jsonbin.io/ で無料アカウントを作成
+//   2. ダッシュボードで「Create Bin」→ 初期値 [] で作成
+//   3. Bin ID と API Key をここに貼り付ける
+const JSONBIN_BIN_ID  = '67f90f258960c979a5a0d2dc'; // ← Bin ID
+const JSONBIN_API_KEY = '$2a$10$hLpW7OEBUCFSClAPk5Gll.sV2RdGT3EwSTekVvSBnY9A0YHuFVGGy'; // ← API Key
+const JSONBIN_URL     = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+
+let scoreboardPollingInterval = null;
+
+// ===== SCOREBOARD (JSONBin.io 共有 / localStorage フォールバック) =====
+async function fetchScoreboard() {
+    if (!JSONBIN_BIN_ID || JSONBIN_BIN_ID === 'YOUR_BIN_ID') {
+        return getLocalScoreboard();
+    }
     try {
-        return JSON.parse(localStorage.getItem('kyokuyo_quiz_scores') || '[]');
-    } catch { return []; }
+        const res = await fetch(`${JSONBIN_URL}/latest`, {
+            headers: { 'X-Access-Key': JSONBIN_API_KEY }
+        });
+        if (!res.ok) throw new Error('fetch failed');
+        const data = await res.json();
+        const record = data.record;
+        return Array.isArray(record) ? record : [];
+    } catch {
+        return getLocalScoreboard();
+    }
 }
 
-function saveScore(email, name, score, correctCount, total, title) {
-    const scores = getScoreboard();
-    const existing = scores.findIndex(s => s.email === email);
+function getLocalScoreboard() {
+    try { return JSON.parse(localStorage.getItem('kyokuyo_quiz_scores') || '[]'); }
+    catch { return []; }
+}
+
+async function saveScore(email, name, score, correctCount, total, title) {
+    const today = new Date().toLocaleDateString('ja-JP');
     const entry = {
         email, name, score, correctCount, total, title,
-        date: new Date().toLocaleString('ja-JP')
+        date: new Date().toLocaleString('ja-JP'),
+        day: today
     };
+
+    const scores = await fetchScoreboard();
+    const existing = scores.findIndex(s => s.email === email);
     if (existing >= 0) {
-        // Update if better score or same
-        if (score >= scores[existing].score) {
-            scores[existing] = entry;
-        }
+        if (score >= scores[existing].score) scores[existing] = entry;
     } else {
         scores.push(entry);
     }
     scores.sort((a, b) => b.score - a.score);
+
+    // ローカルにも保存（フォールバック用）
     localStorage.setItem('kyokuyo_quiz_scores', JSON.stringify(scores));
+
+    if (!JSONBIN_BIN_ID || JSONBIN_BIN_ID === 'YOUR_BIN_ID') return;
+    try {
+        await fetch(JSONBIN_URL, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Access-Key': JSONBIN_API_KEY
+            },
+            body: JSON.stringify(scores)
+        });
+    } catch { /* サーバー保存失敗時はローカルのみ */ }
 }
 
-function renderScoreboard() {
-    const scores = getScoreboard();
+async function renderScoreboard() {
+    const today = new Date().toLocaleDateString('ja-JP');
+    const allScores = await fetchScoreboard();
+    const todayScores = allScores.filter(s => s.day === today);
+    const display = todayScores.length > 0 ? todayScores : allScores;
+
     const tbody = document.getElementById('scoreboardBody');
     tbody.innerHTML = '';
-    scores.forEach((s, i) => {
+    display.forEach((s, i) => {
         const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
         const rankLabel = i === 0 ? '\u{1F947}' : i === 1 ? '\u{1F948}' : i === 2 ? '\u{1F949}' : (i + 1);
         const row = document.createElement('tr');
@@ -1248,6 +1294,25 @@ function renderScoreboard() {
         `;
         tbody.appendChild(row);
     });
+
+    // 最終更新時刻を表示
+    const status = document.getElementById('scoreboardStatus');
+    if (status) {
+        const now = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        status.textContent = `🔄 ${now} 更新`;
+    }
+}
+
+function startScoreboardPolling() {
+    renderScoreboard();
+    scoreboardPollingInterval = setInterval(renderScoreboard, 15000);
+}
+
+function stopScoreboardPolling() {
+    if (scoreboardPollingInterval) {
+        clearInterval(scoreboardPollingInterval);
+        scoreboardPollingInterval = null;
+    }
 }
 
 function clearScoreboard() {
@@ -1298,6 +1363,7 @@ function startGame() {
 }
 
 function replayGame(shuffle) {
+    stopScoreboardPolling();
     currentIndex = 0;
     totalXP = 0;
     playerLevel = 1;
@@ -1517,7 +1583,7 @@ function nextQuestion() {
     loadQuestion();
 }
 
-function endGame() {
+async function endGame() {
     document.getElementById('gameScreen').classList.add('hidden');
     document.getElementById('statusBar').classList.remove('active');
     document.getElementById('xpBarContainer').classList.remove('active');
@@ -1571,9 +1637,9 @@ function endGame() {
         document.getElementById('wrongReview').style.display = 'none';
     }
 
-    // Save score
-    saveScore(playerEmail, playerName, totalXP, correctCount, questions.length, playerTitleName);
-    renderScoreboard();
+    // Save score and start polling for shared leaderboard
+    await saveScore(playerEmail, playerName, totalXP, correctCount, questions.length, playerTitleName);
+    startScoreboardPolling();
 }
 
 function createConfetti() {
