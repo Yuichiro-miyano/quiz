@@ -1361,8 +1361,13 @@ function showScoreboard() {
 }
 
 function backToResults() {
+    stopScoreboardPolling();
     document.getElementById('scoreboardScreen').classList.add('hidden');
-    document.getElementById('gameOverScreen').classList.remove('hidden');
+    if (playerEmail === 'admin') {
+        document.getElementById('loginScreen').classList.remove('hidden');
+    } else {
+        document.getElementById('gameOverScreen').classList.remove('hidden');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1392,6 +1397,19 @@ function startGame() {
     const name = document.getElementById('nameInput').value.trim();
     if (!email) {
         alert('メールアドレスを入力してください。');
+        return;
+    }
+    // 管理者ショートカット
+    if (email.toLowerCase() === 'admin') {
+        playerEmail = 'admin';
+        playerName = '管理者';
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('statusBar').classList.remove('active');
+        document.getElementById('xpBarContainer').classList.remove('active');
+        document.getElementById('scoreboardScreen').classList.remove('hidden');
+        renderScoreboard();
+        startScoreboardPolling();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
     }
     if (!name) {
