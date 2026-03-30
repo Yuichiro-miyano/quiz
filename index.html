@@ -1021,6 +1021,7 @@
                         <th>名前</th>
                         <th>スコア</th>
                         <th>正答率</th>
+                        <th>タイム</th>
                         <th>称号</th>
                         <th>日時</th>
                     </tr>
@@ -1187,6 +1188,7 @@ const ALL_QUESTIONS = [
 // ===== STATE =====
 let playerEmail = "";
 let playerName = "";
+let quizStartTime = null;
 let currentIndex = 0;
 let totalXP = 0;
 let playerLevel = 1;
@@ -1250,8 +1252,10 @@ function getLocalScoreboard() {
 
 async function saveScore(email, name, score, correctCount, total, title) {
     const today = new Date().toLocaleDateString('ja-JP');
+    const elapsed = quizStartTime ? Math.floor((Date.now() - quizStartTime) / 1000) : 9999;
     const entry = {
         email, name, score, correctCount, total, title,
+        elapsed,
         date: new Date().toLocaleString('ja-JP'),
         day: today
     };
@@ -1263,7 +1267,7 @@ async function saveScore(email, name, score, correctCount, total, title) {
     } else {
         scores.push(entry);
     }
-    scores.sort((a, b) => b.score - a.score);
+    scores.sort((a, b) => b.score - a.score || (a.elapsed ?? 9999) - (b.elapsed ?? 9999));
 
     // ローカルにも保存（フォールバック用）
     localStorage.setItem('kyokuyo_quiz_scores', JSON.stringify(scores));
@@ -1317,11 +1321,14 @@ async function renderScoreboard() {
         const isMe = s.email === playerEmail;
         const row = document.createElement('tr');
         if (isMe) row.style.cssText = 'background:rgba(99,102,241,0.15);font-weight:700;outline:2px solid var(--primary);outline-offset:-2px;';
+        const sec = s.elapsed ?? null;
+        const timeStr = sec != null ? `${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}` : '-';
         row.innerHTML = `
             <td class="${rankClass}">${rankLabel}</td>
             <td>${escapeHtml(s.name)}${isMe ? ' <span style="font-size:0.7rem;background:var(--primary);color:#fff;padding:1px 6px;border-radius:4px;vertical-align:middle">あなた</span>' : ''}</td>
             <td>${s.score} XP</td>
             <td>${s.correctCount}/${s.total} (${Math.round(s.correctCount/s.total*100)}%)</td>
+            <td style="font-size:0.85rem">${timeStr}</td>
             <td>${escapeHtml(s.title)}</td>
             <td style="font-size:0.75rem;color:var(--text-muted)">${s.date}</td>
         `;
@@ -1393,6 +1400,7 @@ function startGame() {
     }
     playerEmail = email;
     playerName = name;
+    quizStartTime = Date.now();
     currentIndex = 0;
     totalXP = 0;
     playerLevel = 1;
@@ -1415,6 +1423,7 @@ function startGame() {
 
 function replayGame(shuffle) {
     stopScoreboardPolling();
+    quizStartTime = Date.now();
     currentIndex = 0;
     totalXP = 0;
     playerLevel = 1;
