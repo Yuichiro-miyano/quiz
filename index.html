@@ -1000,27 +1000,36 @@
             </div>
 
             <div class="btn-group">
+                <button class="btn btn-primary" onclick="showScoreboard()">🏆 本日のランキングを見る</button>
+            </div>
+            <div class="btn-group" style="margin-top:0.5rem">
                 <button class="btn btn-gold" onclick="replayGame(true)">シャッフルして再挑戦</button>
                 <button class="btn btn-outline" onclick="replayGame(false)">同じ順番で再挑戦</button>
             </div>
+        </div>
+    </div>
 
-            <!-- Scoreboard -->
-            <div class="admin-section" id="scoreboardSection">
-                <h3>本日のランキング <span id="scoreboardStatus" style="font-size:0.7rem;font-weight:normal;color:var(--text-muted);margin-left:0.5rem;"></span></h3>
-                <table class="scoreboard-table" id="scoreboardTable">
-                    <thead>
-                        <tr>
-                            <th>順位</th>
-                            <th>名前</th>
-                            <th>スコア</th>
-                            <th>正答率</th>
-                            <th>称号</th>
-                            <th>日時</th>
-                        </tr>
-                    </thead>
-                    <tbody id="scoreboardBody"></tbody>
-                </table>
-                <p class="toggle-scoreboard" onclick="clearScoreboard()">成績データをリセット</p>
+    <!-- Scoreboard Screen -->
+    <div id="scoreboardScreen" class="hidden">
+        <div class="card game-over show">
+            <div id="myRankBanner" style="margin-bottom:1.5rem"></div>
+            <h3 style="margin-bottom:0.25rem">本日のランキング <span id="scoreboardStatus" style="font-size:0.7rem;font-weight:normal;color:var(--text-muted);margin-left:0.5rem;"></span></h3>
+            <table class="scoreboard-table" id="scoreboardTable">
+                <thead>
+                    <tr>
+                        <th>順位</th>
+                        <th>名前</th>
+                        <th>スコア</th>
+                        <th>正答率</th>
+                        <th>称号</th>
+                        <th>日時</th>
+                    </tr>
+                </thead>
+                <tbody id="scoreboardBody"></tbody>
+            </table>
+            <p class="toggle-scoreboard" onclick="clearScoreboard()">成績データをリセット</p>
+            <div style="text-align:center;margin-top:1.5rem">
+                <button class="btn btn-outline" onclick="backToResults()">← 結果画面に戻る</button>
             </div>
         </div>
     </div>
@@ -1278,15 +1287,39 @@ async function renderScoreboard() {
     const todayScores = allScores.filter(s => s.day === today);
     const display = todayScores.length > 0 ? todayScores : allScores;
 
+    // 自分の順位を特定
+    const myRank = display.findIndex(s => s.email === playerEmail);
+
+    // 順位バナーを更新
+    const banner = document.getElementById('myRankBanner');
+    if (banner) {
+        if (myRank >= 0) {
+            const rankEmoji = myRank === 0 ? '🥇' : myRank === 1 ? '🥈' : myRank === 2 ? '🥉' : '🎖️';
+            const rankNum = myRank + 1;
+            const total = display.length;
+            banner.innerHTML = `
+                <div style="background:linear-gradient(135deg,var(--primary),var(--accent));border-radius:1rem;padding:1.2rem 1.5rem;color:#fff;text-align:center">
+                    <div style="font-size:2.5rem;line-height:1">${rankEmoji}</div>
+                    <div style="font-size:1.1rem;margin-top:0.4rem;opacity:0.9">${escapeHtml(playerName)} さんの本日の順位</div>
+                    <div style="font-size:2.8rem;font-weight:900;line-height:1.1">${rankNum}<span style="font-size:1.2rem;font-weight:600"> / ${total} 位</span></div>
+                    <div style="font-size:0.9rem;opacity:0.85;margin-top:0.3rem">${totalXP} XP &nbsp;|&nbsp; ${escapeHtml(playerTitleName)}</div>
+                </div>`;
+        } else {
+            banner.innerHTML = '';
+        }
+    }
+
     const tbody = document.getElementById('scoreboardBody');
     tbody.innerHTML = '';
     display.forEach((s, i) => {
         const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
         const rankLabel = i === 0 ? '\u{1F947}' : i === 1 ? '\u{1F948}' : i === 2 ? '\u{1F949}' : (i + 1);
+        const isMe = s.email === playerEmail;
         const row = document.createElement('tr');
+        if (isMe) row.style.cssText = 'background:rgba(99,102,241,0.15);font-weight:700;outline:2px solid var(--primary);outline-offset:-2px;';
         row.innerHTML = `
             <td class="${rankClass}">${rankLabel}</td>
-            <td>${escapeHtml(s.name)}</td>
+            <td>${escapeHtml(s.name)}${isMe ? ' <span style="font-size:0.7rem;background:var(--primary);color:#fff;padding:1px 6px;border-radius:4px;vertical-align:middle">あなた</span>' : ''}</td>
             <td>${s.score} XP</td>
             <td>${s.correctCount}/${s.total} (${Math.round(s.correctCount/s.total*100)}%)</td>
             <td>${escapeHtml(s.title)}</td>
@@ -1304,8 +1337,26 @@ async function renderScoreboard() {
 }
 
 function startScoreboardPolling() {
+    // ゲームオーバー後にバックグラウンドでデータを取得しておく
+    fetchScoreboard().then(() => {});
+    scoreboardPollingInterval = setInterval(() => {
+        if (!document.getElementById('scoreboardScreen').classList.contains('hidden')) {
+            renderScoreboard();
+        }
+    }, 15000);
+}
+
+function showScoreboard() {
+    document.getElementById('gameOverScreen').classList.add('hidden');
+    document.getElementById('scoreboardScreen').classList.remove('hidden');
     renderScoreboard();
-    scoreboardPollingInterval = setInterval(renderScoreboard, 15000);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function backToResults() {
+    document.getElementById('scoreboardScreen').classList.add('hidden');
+    document.getElementById('gameOverScreen').classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function stopScoreboardPolling() {
