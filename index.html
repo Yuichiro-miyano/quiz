@@ -925,10 +925,10 @@
         </p>
         <div class="input-group">
             <label for="emailInput">メールアドレス（社内メール）</label>
-            <input type="email" id="emailInput" placeholder="taro.yamada@kyokuyo.co.jp">
+            <input type="email" id="emailInput" placeholder="taro.yamada@kyokuyo.co.jp" oninput="onEmailInput()">
         </div>
         <div class="input-group">
-            <label for="nameInput">表示名（ニックネーム可）</label>
+            <label for="nameInput"><span id="nameLabelText">表示名（ニックネーム可）</span></label>
             <input type="text" id="nameInput" placeholder="山田太郎">
         </div>
         <div style="margin-top:1rem">
@@ -1184,6 +1184,67 @@ const ALL_QUESTIONS = [
         supplement: "サイバー犯罪者はAIで高品質フィッシングメールの大量生成、ディープフェイクの作成、脆弱性の自動スキャンを行っているにゃ。「不審に感じたら、必ず電話等で直接本人に確認する習慣」が最も重要な防御にゃ。今日から実践する5つのこと：(1)疑わしいメールは開かない (2)パスワードは強固に管理 (3)業務AIはChatAIを使う (4)SNSに会社情報を投稿しない (5)毎日シャットダウンする"
     }
 ];
+
+// ===== 新入社員メールアドレス一覧 =====
+const EMPLOYEE_EMAIL_MAP = {
+    "riona_aoyagi@kyokuyo.co.jp": "青柳 璃央梨",
+    "junsei_asakawa@kyokuyo.co.jp": "浅川 純成",
+    "taisei_azuma@kyokuyo.co.jp": "東 泰成",
+    "yugo_amano@kyokuyo.co.jp": "天野 勇冴",
+    "reina_izumi@kyokuyo.co.jp": "泉 怜那",
+    "fumiya_imaoka@kyokuyo.co.jp": "今岡 史弥",
+    "hiroya_ueda@kyokuyo.co.jp": "上田 紘弥",
+    "kaoruko_usui@kyokuyo.co.jp": "碓井 薫子",
+    "aki_otomo@kyokuyo.co.jp": "大友 明希",
+    "yudai_okutomo@kyokuyo.co.jp": "奥友 雄大",
+    "shintaro_kageyama@kyokuyo.co.jp": "蔭山 慎太郎",
+    "yuki_katayama@kyokuyo.co.jp": "片山 裕貴",
+    "shoma_kamata@kyokuyo.co.jp": "鎌田 翔馬",
+    "rio_kimura@kyokuyo.co.jp": "木村 里緒",
+    "yusei_sato@kyokuyo.co.jp": "佐藤 優成",
+    "hiroto_shono@kyokuyo.co.jp": "庄野 裕人",
+    "kumpei_sugiura@kyokuyo.co.jp": "杉浦 薫平",
+    "yuki_seto@kyokuyo.co.jp": "瀬戸 勇稀",
+    "yusei_takada@kyokuyo.co.jp": "高田 悠生",
+    "shion_takano@kyokuyo.co.jp": "髙野 志恩",
+    "toyohiro_tanaka@kyokuyo.co.jp": "田中 豊浩",
+    "yuto_nakanishi@kyokuyo.co.jp": "中西 祐人",
+    "haruka_nomura@kyokuyo.co.jp": "野村 華加",
+    "misaki_hagio@kyokuyo.co.jp": "萩尾 美咲",
+    "kanta_harada@kyokuyo.co.jp": "原田 幹大",
+    "kei_hirai@kyokuyo.co.jp": "平井 諒",
+    "takumi_fujita@kyokuyo.co.jp": "藤田 拓海",
+    "ayumu_hojo@kyokuyo.co.jp": "北条 天悠武",
+    "minato_horii@kyokuyo.co.jp": "堀井 美奈都",
+    "soma_mizuno@kyokuyo.co.jp": "水野 颯真",
+    "ryota_minamida@kyokuyo.co.jp": "南田 凌汰",
+    "tomochika_yano@kyokuyo.co.jp": "矢野 友睦",
+    "daiki_yamakita@kyokuyo.co.jp": "山北 大貴",
+    "naoki_yamaguchi@kyokuyo.co.jp": "山口 尚輝",
+    "ayano_yoshimoto@kyokuyo.co.jp": "吉本 彩乃"
+};
+
+function onEmailInput() {
+    const email = document.getElementById('emailInput').value.trim().toLowerCase();
+    const nameInput = document.getElementById('nameInput');
+    const nameLabel = document.getElementById('nameLabelText');
+    const matched = EMPLOYEE_EMAIL_MAP[email];
+    if (matched) {
+        nameInput.value = matched;
+        nameInput.readOnly = true;
+        nameInput.style.opacity = '0.7';
+        nameInput.style.cursor = 'not-allowed';
+        if (nameLabel) nameLabel.textContent = '表示名（自動入力）';
+    } else {
+        if (nameInput.readOnly) {
+            nameInput.value = '';
+        }
+        nameInput.readOnly = false;
+        nameInput.style.opacity = '';
+        nameInput.style.cursor = '';
+        if (nameLabel) nameLabel.textContent = '表示名（ニックネーム可）';
+    }
+}
 
 // ===== STATE =====
 let playerEmail = "";
